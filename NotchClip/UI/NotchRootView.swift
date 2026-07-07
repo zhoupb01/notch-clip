@@ -17,9 +17,21 @@ struct NotchRootView: View {
     }
 
     /// 03 第 3 节：展开用 spring，收回（回 idle）用 easeIn 0.18
+    /// 展开弹簧适度过冲回弹，外壳「弹」开更灵动；底部圆角跟随同一动画一起过冲，出「液态」感
     private var stateAnimation: Animation {
         vm.state == .idle ? .easeIn(duration: 0.18)
-                          : .spring(response: 0.35, dampingFraction: 0.75)
+                          : .spring(response: 0.42, dampingFraction: 0.66)
+    }
+
+    /// 内容级联入场：外壳先弹开，内容随后（延迟 0.06s）淡入 + 轻微下移放大归位，制造波浪/层次感。
+    /// 退场仍必须 .identity 立即移除——退场视图参与布局会撑住 ZStack，收回时跳变（docs/03 第 3 节）
+    private var contentTransition: AnyTransition {
+        .asymmetric(
+            insertion: .opacity
+                .combined(with: .offset(y: 10))
+                .combined(with: .scale(scale: 0.97, anchor: .top))
+                .animation(.spring(response: 0.34, dampingFraction: 0.72).delay(0.06)),
+            removal: .identity)
     }
 
     var body: some View {
@@ -43,7 +55,7 @@ struct NotchRootView: View {
                             .frame(maxHeight: 480, alignment: .top)
                     }
                 }
-                .transition(.asymmetric(insertion: .opacity, removal: .identity))
+                .transition(contentTransition)
             }
             .background(Color.black)
             .clipShape(UnevenRoundedRectangle(cornerRadii: .init(bottomLeading: bottomRadius,

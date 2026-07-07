@@ -20,6 +20,10 @@ struct NotchGeometry {
             let h = screen.safeAreaInsets.top
             let w = f.width - left.width - right.width
             let rect = NSRect(x: f.minX + left.width, y: f.maxY - h, width: w, height: h)
+            #if DEBUG
+            // 临时：真机上分别在「非全屏」「全屏」触发一次，核对两组是否不同（验证后删除）
+            print("[NotchGeometry] frame=\(f) safeTop=\(screen.safeAreaInsets.top) left=\(left) right=\(right) notchRect=\(rect)")
+            #endif
             return NotchGeometry(screen: screen, hasNotch: true, notchRect: rect)
         }
         // 无刘海降级：200×32 假刘海，贴顶居中（F10）

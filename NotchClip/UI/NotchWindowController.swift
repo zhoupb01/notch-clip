@@ -40,6 +40,19 @@ final class NotchWindowController {
         ) { [weak self] _ in
             Task { @MainActor in self?.rebuild() }
         }
+        // 进入/退出全屏走 Space 切换（不触发 screenParameters）。若不重检测，刘海几何
+        // 会相对当前模式变陈旧 → 面板位置/尺寸偏移、顶部与刘海衔接错位。切换时重建，
+        // 让窗口位置、顶部安全区高按当前模式的刘海重新对齐
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.activeSpaceDidChangeNotification,
+            object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                guard let self else { return }
+                if self.viewModel.state != .idle { self.closePanel(restoreFocus: false) }
+                self.rebuild()
+            }
+        }
     }
 
     // MARK: 对外动作
