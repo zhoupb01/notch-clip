@@ -68,7 +68,7 @@ struct PanelView: View {
             .foregroundStyle(.white.opacity(0.35))
             .frame(height: 26)
         }
-        .background(Color(red: 14/255, green: 14/255, blue: 16/255))   // #0E0E10
+        .background(Color.black)   // 纯黑，与刘海容器/HUD 一致，尽量贴近物理刘海的真黑
         .onAppear {
             // ⌘⇧V 呼出才聚焦搜索；悬停呼出不聚焦（03 第 4 节）
             if !vm.panelOpenedByHover { searchFocused = true }
