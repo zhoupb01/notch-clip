@@ -4,23 +4,28 @@ import SwiftUI
 struct HUDView: View {
     let item: ClipItem
     let store: HistoryStore
+    let notchHeight: CGFloat
 
     var body: some View {
-        HStack(spacing: 10) {
-            leadingIcon
-            Text(primaryText)
-                .font(item.type == .color ? .system(size: 12, design: .monospaced)
-                                          : .system(size: 12))
-                .foregroundStyle(.white.opacity(0.92))
-                .lineLimit(1)
-                .truncationMode(.tail)
-            Spacer(minLength: 8)
-            Text(trailingLabel)
-                .font(.system(size: 11))
-                .foregroundStyle(.white.opacity(0.45))
-                .fixedSize()
+        VStack(spacing: 0) {
+            Color.clear.frame(height: notchHeight)   // 顶部安全区：避免内容被硬件刘海遮住
+            HStack(spacing: 10) {
+                leadingIcon
+                Text(primaryText)
+                    .font(item.type == .color ? .system(size: 12, design: .monospaced)
+                                              : .system(size: 12))
+                    .foregroundStyle(.white.opacity(0.92))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                Spacer(minLength: 8)
+                Text(trailingLabel)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.white.opacity(0.45))
+                    .fixedSize()
+            }
+            .padding(.horizontal, 16)
+            .frame(height: 28)
         }
-        .padding(.horizontal, 16)
     }
 
     @ViewBuilder private var leadingIcon: some View {
