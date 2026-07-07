@@ -8,6 +8,14 @@ struct SettingsView: View {
     @State private var excluded = Settings.shared.excludedBundleIDs.sorted().joined(separator: "\n")
     @State private var launchAtLogin = (SMAppService.mainApp.status == .enabled)
 
+    /// 版本号来自 Info.plist（由 project.yml 的 MARKETING_VERSION / CURRENT_PROJECT_VERSION 生成）
+    private var versionText: String {
+        let info = Bundle.main.infoDictionary
+        let version = info?["CFBundleShortVersionString"] as? String ?? "—"
+        let build = info?["CFBundleVersion"] as? String ?? "—"
+        return "\(version) (\(build))"
+    }
+
     var body: some View {
         Form {
             Picker("唤醒方式", selection: $wakeMode) {
@@ -43,8 +51,10 @@ struct SettingsView: View {
                         Settings.shared.excludedBundleIDs = Set(ids)
                     }
             }
+
+            LabeledContent("版本", value: versionText)
         }
         .formStyle(.grouped)
-        .frame(width: 420, height: 320)
+        .frame(width: 420, height: 380)
     }
 }
