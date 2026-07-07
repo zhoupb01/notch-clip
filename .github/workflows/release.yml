@@ -1,0 +1,30 @@
+name: Release
+
+# 推送形如 v1.0.1 的 tag 时触发：在 GitHub 上自动构建 DMG 并创建 Release
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write # gh release create 需要仓库写权限
+
+jobs:
+  release:
+    runs-on: macos-26 # 自带 Xcode 26 / macOS 26 SDK，匹配 project.yml 的部署目标
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 XcodeGen
+        run: brew install xcodegen
+
+      - name: 构建 DMG
+        run: ./scripts/make_dmg.sh # 内部：生成图标 → xcodegen → Release 构建(ad-hoc 签名) → 打包 DMG
+
+      - name: 创建 Release 并上传 DMG
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" build/NotchClip-*.dmg \
+            --title "NotchClip $GITHUB_REF_NAME" \
+            --generate-notes
