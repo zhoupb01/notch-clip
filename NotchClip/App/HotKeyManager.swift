@@ -8,8 +8,9 @@ final class HotKeyManager {
     private nonisolated(unsafe) var hotKeyRef: EventHotKeyRef?
     private nonisolated(unsafe) var handlerRef: EventHandlerRef?
 
-    /// 注册 ⌘⇧V（v1 写死，不做自定义）
+    /// 注册 ⌘⇧V（v1 写死，不做自定义）。幂等：已注册则跳过
     func register() {
+        guard hotKeyRef == nil else { return }
         var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard),
                                       eventKind: UInt32(kEventHotKeyPressed))
         InstallEventHandler(GetApplicationEventTarget(), { _, _, userData in
@@ -25,6 +26,12 @@ final class HotKeyManager {
                             UInt32(cmdKey | shiftKey),
                             hotKeyID,
                             GetApplicationEventTarget(), 0, &hotKeyRef)
+    }
+
+    /// 注销快捷键（切换到悬停模式时调用）
+    func unregister() {
+        if let hotKeyRef { UnregisterEventHotKey(hotKeyRef); self.hotKeyRef = nil }
+        if let handlerRef { RemoveEventHandler(handlerRef); self.handlerRef = nil }
     }
 
     deinit {

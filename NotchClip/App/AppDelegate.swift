@@ -42,7 +42,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
         }
-        hotKey.register()
+        applyWakeMode()
+        NotificationCenter.default.addObserver(
+            forName: Settings.wakeModeDidChange, object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in self?.applyWakeMode() }
+        }
 
         statusItemManager = StatusItemManager(
             onOpenPanel: { [weak self] in self?.windowController.openPanel(byHover: false) },
@@ -53,6 +58,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         store?.saveNow()
+    }
+
+    /// 按设置里的唤醒方式启用其一：快捷键 或 刘海悬停
+    private func applyWakeMode() {
+        let mode = Settings.shared.wakeMode
+        if mode == .hotKey { hotKey.register() } else { hotKey.unregister() }
+        windowController.hoverWakeEnabled = (mode == .hover)
     }
 
     private func confirmClearHistory() {
@@ -74,7 +86,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                              styleMask: [.titled, .closable],
                              backing: .buffered, defer: false)
             w.title = "NotchClip 设置"
-            w.contentView = NSHostingView(rootView: SettingsView())
+            let host = NSHostingView(rootView: SettingsView())
+            w.contentView = host
+            w.setContentSize(host.fittingSize)   // 先按内容定尺寸，center() 才能算对居中原点
             w.isReleasedWhenClosed = false
             w.center()
             settingsWindow = w

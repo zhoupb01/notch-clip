@@ -7,6 +7,21 @@ final class Settings: @unchecked Sendable {
     static let shared = Settings()
     private let d = UserDefaults.standard
 
+    /// 灵动岛唤醒方式，二选一
+    enum WakeMode: String, CaseIterable {
+        case hover    // 鼠标移到刘海
+        case hotKey   // 快捷键 ⌘⇧V
+    }
+
+    /// 唤醒方式变更后广播，AppDelegate 据此实时切换快捷键/悬停
+    static let wakeModeDidChange = Notification.Name("NotchClip.wakeModeDidChange")
+
+    /// 唤醒方式，默认悬停（灵动岛原生交互）
+    var wakeMode: WakeMode {
+        get { WakeMode(rawValue: d.string(forKey: "wakeMode") ?? "") ?? .hover }
+        set { d.set(newValue.rawValue, forKey: "wakeMode") }
+    }
+
     /// 历史条数上限，允许值 100/500/1000，默认 500
     var maxItems: Int {
         get { let v = d.integer(forKey: "maxItems"); return v == 0 ? 500 : v }

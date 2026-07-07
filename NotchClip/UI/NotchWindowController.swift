@@ -12,6 +12,9 @@ final class NotchWindowController {
     private let pasteService: PasteService
     private let monitor: ClipboardMonitor
 
+    /// 悬停唤醒开关。由 AppDelegate 按唤醒方式设置；关闭时刘海悬停不再展开面板
+    var hoverWakeEnabled = true
+
     private(set) var geometry = NotchGeometry.detect()
     private var panel: NotchPanel?
     private var cancellables = Set<AnyCancellable>()
@@ -114,6 +117,7 @@ final class NotchWindowController {
         let loc = NSEvent.mouseLocation
         switch viewModel.state {
         case .idle, .hud:   // HUD 显示期间也接受悬停，直接升级为面板，消除复制后的失灵窗口
+            guard hoverWakeEnabled else { hoverStart = nil; break }
             if notchHoverRect().contains(loc) {
                 if hoverStart == nil { hoverStart = Date() }
                 if Date().timeIntervalSince(hoverStart!) >= 0.15 {   // 悬停 0.15s 触发

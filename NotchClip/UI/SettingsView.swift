@@ -3,12 +3,22 @@ import SwiftUI
 import ServiceManagement
 
 struct SettingsView: View {
+    @State private var wakeMode = Settings.shared.wakeMode
     @State private var maxItems = Settings.shared.maxItems
     @State private var excluded = Settings.shared.excludedBundleIDs.sorted().joined(separator: "\n")
     @State private var launchAtLogin = (SMAppService.mainApp.status == .enabled)
 
     var body: some View {
         Form {
+            Picker("唤醒方式", selection: $wakeMode) {
+                Text("鼠标移到刘海").tag(Settings.WakeMode.hover)
+                Text("快捷键 ⌘⇧V").tag(Settings.WakeMode.hotKey)
+            }
+            .onChange(of: wakeMode) {
+                Settings.shared.wakeMode = wakeMode
+                NotificationCenter.default.post(name: Settings.wakeModeDidChange, object: nil)
+            }
+
             Picker("历史条数上限", selection: $maxItems) {
                 Text("100").tag(100)
                 Text("500").tag(500)
