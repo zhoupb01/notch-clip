@@ -12,7 +12,7 @@ final class NotchViewModel: ObservableObject {
 
     @Published private(set) var state: State = .idle
     @Published var searchText = ""
-    @Published var selectedIndex = 0
+    @Published var selectedIndex = 0   // 仅用于鼠标 hover 高亮
     private(set) var panelOpenedByHover = false
     private var hudWork: DispatchWorkItem?
 
@@ -55,10 +55,5 @@ final class NotchViewModel: ObservableObject {
         let pinned = list.filter { $0.isPinned }
         let normal = list.filter { !$0.isPinned }
         return Array((pinned + normal).prefix(50))
-    }
-
-    func moveSelection(_ delta: Int, itemCount: Int) {
-        guard itemCount > 0 else { return }
-        selectedIndex = min(max(selectedIndex + delta, 0), itemCount - 1)
     }
 }

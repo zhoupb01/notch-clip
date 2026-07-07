@@ -63,18 +63,6 @@ final class NotchWindowController {
         pasteService.paste(item, imagesDir: store.imagesDir, monitor: monitor)
     }
 
-    private func pasteSelected() {
-        let items = viewModel.displayItems(from: store.items)
-        guard items.indices.contains(viewModel.selectedIndex) else { return }
-        paste(items[viewModel.selectedIndex])
-    }
-
-    private func paste(at index: Int) {
-        let items = viewModel.displayItems(from: store.items)
-        guard items.indices.contains(index) else { return }
-        paste(items[index])
-    }
-
     // MARK: 窗口
 
     private func containerRect() -> NSRect {
@@ -125,8 +113,8 @@ final class NotchWindowController {
     private func hoverTick() {
         let loc = NSEvent.mouseLocation
         switch viewModel.state {
-        case .idle:
-            if geometry.notchRect.contains(loc) {
+        case .idle, .hud:   // HUD 显示期间也接受悬停，直接升级为面板，消除复制后的失灵窗口
+            if notchHoverRect().contains(loc) {
                 if hoverStart == nil { hoverStart = Date() }
                 if Date().timeIntervalSince(hoverStart!) >= 0.15 {   // 悬停 0.15s 触发
                     hoverStart = nil
@@ -151,6 +139,14 @@ final class NotchWindowController {
         }
     }
 
+    /// 空闲/HUD 态触发面板的悬停判定区（屏幕坐标）。
+    /// 左右各放宽 20pt 降低盲瞄难度；上边越过屏幕顶 4pt——鼠标甩到顶边时 y 恰好
+    /// 等于屏幕 maxY，而 NSRect.contains 上边界是半开区间会判失败
+    private func notchHoverRect() -> NSRect {
+        let n = geometry.notchRect
+        return NSRect(x: n.minX - 20, y: n.minY, width: n.width + 40, height: n.height + 4)
+    }
+
     /// 面板悬停判定区域（屏幕坐标），按最大面板尺寸计算，四周放宽 8pt
     private func panelHoverRect() -> NSRect {
         NSRect(x: geometry.notchRect.midX - 210,
@@ -165,21 +161,11 @@ final class NotchWindowController {
         // 处理过的按键返回 nil 吞掉；其他按键返回 event 放行给搜索框
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self, self.viewModel.state == .panel else { return event }
-            let itemCount = self.viewModel.displayItems(from: self.store.items).count
-            switch event.keyCode {
-            case 53:      self.closePanel(); return nil                                    // esc
-            case 36, 76:  self.pasteSelected(); return nil                                 // ↩ / enter
-            case 125:     self.viewModel.moveSelection(1, itemCount: itemCount); return nil  // ↓
-            case 126:     self.viewModel.moveSelection(-1, itemCount: itemCount); return nil // ↑
-            default: break
-            }
-            if event.modifierFlags.contains(.command),
-               let ch = event.charactersIgnoringModifiers,
-               let n = Int(ch), (1...9).contains(n) {
-                self.paste(at: n - 1)                                                      // ⌘1~9
+            if event.keyCode == 53 {   // esc 关闭；列表操作全交给鼠标
+                self.closePanel()
                 return nil
             }
-            return event
+            return event   // 其余按键放行给搜索框
         }
         // 全局鼠标按下：点击面板外 → 关闭。全局监听收不到本应用内部的点击，
         // 所以面板内的点击天然不会误触发

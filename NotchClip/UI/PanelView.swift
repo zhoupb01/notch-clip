@@ -35,32 +35,25 @@ struct PanelView: View {
             if items.isEmpty {
                 emptyState
             } else {
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        LazyVStack(spacing: 2) {
-                            ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                                PanelRow(item: item,
-                                         index: index,
-                                         isSelected: index == vm.selectedIndex,
-                                         thumbnailURL: store.imageURL(for: item))
-                                    .contentShape(Rectangle())
-                                    .onTapGesture { onPaste(item) }
-                                    .onHover { hovering in
-                                        if hovering { vm.selectedIndex = index }
-                                    }
-                                    .contextMenu {
-                                        Button(item.isPinned ? "取消固定" : "固定") { onTogglePin(item) }
-                                        Button("删除") { store.delete(item) }
-                                    }
-                                    .id(index)
-                            }
+                ScrollView {
+                    LazyVStack(spacing: 2) {
+                        ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                            PanelRow(item: item,
+                                     isSelected: index == vm.selectedIndex,
+                                     thumbnailURL: store.imageURL(for: item))
+                                .contentShape(Rectangle())
+                                .onTapGesture { onPaste(item) }
+                                .onHover { hovering in
+                                    if hovering { vm.selectedIndex = index }
+                                }
+                                .contextMenu {
+                                    Button(item.isPinned ? "取消固定" : "固定") { onTogglePin(item) }
+                                    Button("删除") { store.delete(item) }
+                                }
                         }
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 6)
                     }
-                    .onChange(of: vm.selectedIndex) {
-                        proxy.scrollTo(vm.selectedIndex)   // 键盘移动时保证选中行可见
-                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 6)
                 }
             }
 
@@ -68,9 +61,8 @@ struct PanelView: View {
 
             // 底部提示条
             HStack(spacing: 16) {
-                Text("↩ 粘贴")
-                Text("⌘1-9 快速粘贴")
-                Text("esc 关闭")
+                Text("点击粘贴")
+                Text("右键固定 / 删除")
             }
             .font(.system(size: 11))
             .foregroundStyle(.white.opacity(0.35))
@@ -107,7 +99,6 @@ struct PanelView: View {
 
 private struct PanelRow: View {
     let item: ClipItem
-    let index: Int
     let isSelected: Bool
     let thumbnailURL: URL?
 
@@ -124,11 +115,6 @@ private struct PanelRow: View {
                 .font(.system(size: 11))
                 .foregroundStyle(.white.opacity(0.4))
                 .lineLimit(1)
-            if index < 9 {
-                Text("⌘\(index + 1)")
-                    .font(.system(size: 11, design: .monospaced))
-                    .foregroundStyle(.white.opacity(0.35))
-            }
         }
         .padding(.horizontal, 12)
         .frame(height: 36)
@@ -150,7 +136,7 @@ private struct PanelRow: View {
                     .fill(Color(nsColor: NSColor(hexString: item.text ?? "") ?? .white))
                     .frame(width: 14, height: 14)
             case .image:
-                if let url = thumbnailURL, let img = NSImage(contentsOf: url) {
+                if let url = thumbnailURL, let img = ThumbnailCache.shared.image(for: url) {
                     Image(nsImage: img).resizable().scaledToFill()
                         .frame(width: 24, height: 24)
                         .clipShape(RoundedRectangle(cornerRadius: 4))
@@ -178,6 +164,20 @@ private struct PanelRow: View {
     private var sourceAndTime: String {
         let app = item.sourceAppName ?? "未知"
         return "\(app) · \(relativeTimeString(item.createdAt))"
+    }
+}
+
+/// 缩略图缓存：滚动时同一张图会被反复渲染，避免每次都从磁盘同步解码（滚动卡顿元凶之一）
+@MainActor
+private final class ThumbnailCache {
+    static let shared = ThumbnailCache()
+    private let cache = NSCache<NSURL, NSImage>()
+
+    func image(for url: URL) -> NSImage? {
+        if let hit = cache.object(forKey: url as NSURL) { return hit }
+        guard let img = NSImage(contentsOf: url) else { return nil }
+        cache.setObject(img, forKey: url as NSURL)
+        return img
     }
 }
 
