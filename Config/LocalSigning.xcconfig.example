@@ -1,0 +1,4 @@
+// 复制为 LocalSigning.xcconfig 并填入你自己的团队，即可用正式签名本地运行（可选）。
+// 该文件被 .gitignore 忽略，不会提交。
+// CODE_SIGN_STYLE = Automatic
+// DEVELOPMENT_TEAM = XXXXXXXXXX

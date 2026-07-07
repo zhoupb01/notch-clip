@@ -1,0 +1,9 @@
+{
+    "name": "@notchclip/app",
+    "private": true,
+    "scripts": {
+        "project:generate": "xcodegen generate --spec project.yml",
+        "build": "bun run project:generate && xcodebuild -project NotchClip.xcodeproj -scheme NotchClip -configuration Debug -destination 'platform=macOS' build",
+        "typecheck": "swiftc -typecheck -swift-version 6 -parse-as-library $(find NotchClip -name '*.swift' | sort)"
+    }
+}

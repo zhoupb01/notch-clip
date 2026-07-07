@@ -1,0 +1,8 @@
+// 本地 ad-hoc 签名：无需开发者团队即可编译并本地运行（模拟 ⌘V 需在真机授予辅助功能权限）。
+// 决策 D6：不含任何 entitlements => 不开启 App Sandbox。
+CODE_SIGN_STYLE = Manual
+CODE_SIGN_IDENTITY = -
+DEVELOPMENT_TEAM =
+PRODUCT_BUNDLE_IDENTIFIER = com.example.notchclip
+
+#include? "LocalSigning.xcconfig"

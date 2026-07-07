@@ -1,0 +1,31 @@
+# macOS
+.DS_Store
+
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# XcodeGen 生成的工程（由 project.yml 生成，不入库）
+NotchClip.xcodeproj/
+
+# 本地签名覆盖（私有）
+Config/LocalSigning.xcconfig
+
+# 构建缓存
+.cache/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# Node / bun
+node_modules/
