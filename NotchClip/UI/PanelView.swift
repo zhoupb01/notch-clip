@@ -136,7 +136,7 @@ private struct PanelRow: View {
                     .fill(Color(nsColor: NSColor(hexString: item.text ?? "") ?? .white))
                     .frame(width: 14, height: 14)
             case .image:
-                if let url = thumbnailURL, let img = ThumbnailCache.shared.image(for: url) {
+                if let url = thumbnailURL, let img = ThumbnailCache.shared.thumbnail(for: url) {
                     Image(nsImage: img).resizable().scaledToFill()
                         .frame(width: 24, height: 24)
                         .clipShape(RoundedRectangle(cornerRadius: 4))
@@ -164,20 +164,6 @@ private struct PanelRow: View {
     private var sourceAndTime: String {
         let app = item.sourceAppName ?? "未知"
         return "\(app) · \(relativeTimeString(item.createdAt))"
-    }
-}
-
-/// 缩略图缓存：滚动时同一张图会被反复渲染，避免每次都从磁盘同步解码（滚动卡顿元凶之一）
-@MainActor
-private final class ThumbnailCache {
-    static let shared = ThumbnailCache()
-    private let cache = NSCache<NSURL, NSImage>()
-
-    func image(for url: URL) -> NSImage? {
-        if let hit = cache.object(forKey: url as NSURL) { return hit }
-        guard let img = NSImage(contentsOf: url) else { return nil }
-        cache.setObject(img, forKey: url as NSURL)
-        return img
     }
 }
 

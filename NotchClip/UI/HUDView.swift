@@ -35,7 +35,7 @@ struct HUDView: View {
                 .fill(Color(nsColor: NSColor(hexString: item.text ?? "") ?? .white))
                 .frame(width: 14, height: 14)
         case .image:
-            if let url = store.imageURL(for: item), let img = NSImage(contentsOf: url) {
+            if let url = store.imageURL(for: item), let img = ThumbnailCache.shared.thumbnail(for: url) {
                 Image(nsImage: img)
                     .resizable().scaledToFill()
                     .frame(width: 18, height: 18)
@@ -72,8 +72,8 @@ struct HUDView: View {
         case .color:
             return item.text ?? ""
         case .image:
-            if let url = store.imageURL(for: item), let img = NSImage(contentsOf: url) {
-                return "图片 \(Int(img.size.width))×\(Int(img.size.height))"
+            if let url = store.imageURL(for: item), let size = ThumbnailCache.pixelSize(of: url) {
+                return "图片 \(size.width)×\(size.height)"
             }
             return "图片"
         case .file:
