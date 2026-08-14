@@ -42,7 +42,7 @@ final class NotchViewModel: ObservableObject {
     }
 
     /// 面板展示列表：固定项在前，其余按时间倒序（store 本身就是倒序）；
-    /// 搜索时隐藏图片条目；性能兜底最多 50 条。Controller 和 PanelView 都调用它，保证一致
+    /// 搜索时隐藏图片条目。Controller 和 PanelView 都调用它，保证一致
     func displayItems(from all: [ClipItem]) -> [ClipItem] {
         var list = all
         let q = searchText.trimmingCharacters(in: .whitespaces).lowercased()
@@ -54,6 +54,6 @@ final class NotchViewModel: ObservableObject {
         }
         let pinned = list.filter { $0.isPinned }
         let normal = list.filter { !$0.isPinned }
-        return Array((pinned + normal).prefix(50))
+        return pinned + normal
     }
 }
