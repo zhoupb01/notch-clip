@@ -28,7 +28,7 @@ if [[ ! -d "$PRODUCT" ]]; then
   exit 1
 fi
 
-echo "▶︎ 3/4 安装到 $DEST（替换旧版本）..."
+echo "▶︎ 3/4 安装到 ${DEST}（替换旧版本）..."
 # 若旧版本正在运行，先退出，否则覆盖会失败
 osascript -e "quit app \"$APP_NAME\"" 2>/dev/null || true
 rm -rf "$DEST"
