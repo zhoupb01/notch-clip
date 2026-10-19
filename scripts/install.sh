@@ -13,7 +13,7 @@ DEST="/Applications/$APP_NAME.app"
 echo "▶︎ 1/4 生成工程..."
 xcodegen generate --spec project.yml
 
-echo "▶︎ 2/4 Release 构建（ad-hoc 签名）..."
+echo "▶︎ 2/4 Release 构建..."
 xcodebuild \
   -project "$APP_NAME.xcodeproj" \
   -scheme "$APP_NAME" \
