@@ -34,6 +34,7 @@ final class NotchWindowController {
     private var outsideStart: Date?
     private var keyMonitor: Any?
     private var mouseDownMonitor: Any?
+    private var hideWork: DispatchWorkItem?
 
     init(viewModel: NotchViewModel, store: HistoryStore,
          pasteService: PasteService, monitor: ClipboardMonitor) {
@@ -106,6 +107,7 @@ final class NotchWindowController {
                                  onTogglePin: { [weak self] in self?.store.togglePin($0) })
         p.contentView = NSHostingView(rootView: root)
         p.ignoresMouseEvents = true
+        p.alphaValue = (geometry.hasNotch && viewModel.state == .idle) ? 0 : 1
         p.orderFrontRegardless()
         panel = p
     }
@@ -124,8 +126,23 @@ final class NotchWindowController {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] state in
                 self?.panel?.ignoresMouseEvents = (state != .panel)
+                self?.updateVisibility(for: state)
             }
             .store(in: &cancellables)
+    }
+
+    /// 真刘海上常态黑块本就藏在硬件刘海后面，但切 Space 的滑动动画、截图、录屏会把它带出来，
+    /// 所以常态隐藏整个窗口。离开常态立即显示（起始形状仍在刘海后面）；回到常态等收起动画
+    /// （easeIn 0.18s）放完再隐藏，展开/收起观感不变。假刘海常态必须可见，不隐藏
+    private func updateVisibility(for state: NotchViewModel.State) {
+        hideWork?.cancel()
+        guard geometry.hasNotch, state == .idle else {
+            panel?.alphaValue = 1
+            return
+        }
+        let work = DispatchWorkItem { [weak self] in self?.panel?.alphaValue = 0 }
+        hideWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: work)
     }
 
     // MARK: 悬停检测（决策 D3：0.1s 轮询鼠标位置，不依赖窗口事件、无需权限）

@@ -4,6 +4,8 @@ import AppKit
 struct NotchGeometry {
     /// 刘海矩形，全局屏幕坐标（原点在主屏左下角）
     let notchRect: NSRect
+    /// 是否真刘海。假刘海（无刘海屏的降级小黑条）常态必须可见，真刘海常态窗口隐藏
+    let hasNotch: Bool
 
     static func detect() -> NotchGeometry {
         // 多显示器：优先选带刘海的内建屏，否则主屏（见 03 第 6 节）
@@ -18,10 +20,10 @@ struct NotchGeometry {
             let h = screen.safeAreaInsets.top
             let w = f.width - left.width - right.width
             let rect = NSRect(x: f.minX + left.width, y: f.maxY - h, width: w, height: h)
-            return NotchGeometry(notchRect: rect)
+            return NotchGeometry(notchRect: rect, hasNotch: true)
         }
         // 无刘海降级：200×32 假刘海，贴顶居中（F10）
         let rect = NSRect(x: f.midX - 100, y: f.maxY - 32, width: 200, height: 32)
-        return NotchGeometry(notchRect: rect)
+        return NotchGeometry(notchRect: rect, hasNotch: false)
     }
 }
