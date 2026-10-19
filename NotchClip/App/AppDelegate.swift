@@ -23,11 +23,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.showAccessibilityAlert()
         }
 
-        monitor.onNewItem = { [weak self] item, data in
-            Task { @MainActor in
-                guard let self else { return }
-                let stored = self.store.add(item, imageData: data)
-                self.viewModel.showHUD(stored)
+        monitor.onNewItem = { [weak self] item, image in
+            self?.store.add(item, image: image) { [weak self] stored in
+                self?.viewModel.showHUD(stored)
             }
         }
         monitor.start()

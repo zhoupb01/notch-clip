@@ -12,7 +12,6 @@ final class NotchViewModel: ObservableObject {
 
     @Published private(set) var state: State = .idle
     @Published var searchText = ""
-    @Published var selectedIndex = 0   // 仅用于鼠标 hover 高亮
     private(set) var panelOpenedByHover = false
     private var hudWork: DispatchWorkItem?
 
@@ -32,7 +31,6 @@ final class NotchViewModel: ObservableObject {
         hudWork?.cancel()
         panelOpenedByHover = byHover
         searchText = ""
-        selectedIndex = 0
         state = .panel
     }
 
@@ -42,7 +40,7 @@ final class NotchViewModel: ObservableObject {
     }
 
     /// 面板展示列表：固定项在前，其余按时间倒序（store 本身就是倒序）；
-    /// 搜索时隐藏图片条目。Controller 和 PanelView 都调用它，保证一致
+    /// 搜索时隐藏图片条目。
     func displayItems(from all: [ClipItem]) -> [ClipItem] {
         var list = all
         let q = searchText.trimmingCharacters(in: .whitespaces).lowercased()

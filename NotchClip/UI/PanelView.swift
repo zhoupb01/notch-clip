@@ -37,15 +37,10 @@ struct PanelView: View {
             } else {
                 ScrollView {
                     LazyVStack(spacing: 2) {
-                        ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                            PanelRow(item: item,
-                                     isSelected: index == vm.selectedIndex,
-                                     thumbnailURL: store.imageURL(for: item))
+                        ForEach(items) { item in
+                            PanelRow(item: item, thumbnailURL: store.imageURL(for: item))
                                 .contentShape(Rectangle())
                                 .onTapGesture { onPaste(item) }
-                                .onHover { hovering in
-                                    if hovering { vm.selectedIndex = index }
-                                }
                                 .contextMenu {
                                     Button(item.isPinned ? "取消固定" : "固定") { onTogglePin(item) }
                                     Button("删除") { store.delete(item) }
@@ -73,7 +68,6 @@ struct PanelView: View {
             // ⌘⇧V 呼出才聚焦搜索；悬停呼出不聚焦（03 第 4 节）
             if !vm.panelOpenedByHover { searchFocused = true }
         }
-        .onChange(of: vm.searchText) { vm.selectedIndex = 0 }
     }
 
     private var divider: some View {
@@ -99,8 +93,9 @@ struct PanelView: View {
 
 private struct PanelRow: View {
     let item: ClipItem
-    let isSelected: Bool
     let thumbnailURL: URL?
+
+    @State private var isHovered = false
 
     var body: some View {
         HStack(spacing: 10) {
@@ -120,8 +115,9 @@ private struct PanelRow: View {
         .frame(height: 36)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(isSelected ? Color.white.opacity(0.09) : Color.clear)
+                .fill(isHovered ? Color.white.opacity(0.09) : Color.clear)
         )
+        .onHover { isHovered = $0 }
     }
 
     @ViewBuilder private var leadingIcon: some View {
@@ -167,13 +163,18 @@ private struct PanelRow: View {
     }
 }
 
+@MainActor private let relativeDateFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "M月d日"
+    return formatter
+}()
+
 /// 相对时间：刚刚 / N 分钟前 / N 小时前 / M月d日（03 第 4 节）
+@MainActor
 func relativeTimeString(_ date: Date) -> String {
     let s = Date().timeIntervalSince(date)
     if s < 60 { return "刚刚" }
     if s < 3600 { return "\(Int(s / 60)) 分钟前" }
     if s < 86400 { return "\(Int(s / 3600)) 小时前" }
-    let f = DateFormatter()
-    f.dateFormat = "M月d日"
-    return f.string(from: date)
+    return relativeDateFormatter.string(from: date)
 }

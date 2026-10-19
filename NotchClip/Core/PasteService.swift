@@ -35,7 +35,6 @@ final class PasteService {
 
     private func writeToPasteboard(_ item: ClipItem, imagesDir: URL, monitor: ClipboardMonitor) {
         let pb = NSPasteboard.general
-        monitor.ignoreNextChange = true   // 决策 D5（坑 2）
         pb.clearContents()
         switch item.type {
         case .text, .link, .color:
@@ -52,6 +51,7 @@ final class PasteService {
                 pb.setData(data, forType: .png)
             }
         }
+        monitor.skipOwnWrite()
     }
 
     /// 模拟 ⌘V。虚拟键码 kVK_ANSI_V = 9，不要改

@@ -1,12 +1,14 @@
 // Core/ClipboardMonitor.swift
 import AppKit
 
+enum ClipImage: Sendable {
+    case png(Data), tiff(Data)
+}
+
 @MainActor
 final class ClipboardMonitor {
-    /// 新内容回调。第二个参数仅当 type == .image 时非空，是 PNG 数据，交给存储层落盘
-    var onNewItem: ((ClipItem, Data?) -> Void)?
-    /// 决策 D5：PasteService 写回剪贴板前置为 true，跳过一次监听，避免自我循环
-    var ignoreNextChange = false
+    /// 新内容回调。第二个参数仅当 type == .image 时非空，是原始图片数据，交给存储层处理
+    var onNewItem: ((ClipItem, ClipImage?) -> Void)?
 
     private var timer: Timer?
     private var lastChangeCount = NSPasteboard.general.changeCount
@@ -17,6 +19,7 @@ final class ClipboardMonitor {
         let t = Timer(timeInterval: 0.3, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.tick() }
         }
+        t.tolerance = 0.1
         // 必须加到 .common 模式，否则菜单打开/滚动时定时器会停摆（坑 5）
         RunLoop.main.add(t, forMode: .common)
         timer = t
@@ -27,24 +30,25 @@ final class ClipboardMonitor {
         timer = nil
     }
 
+    /// 决策 D5：PasteService 写回后立即调用，将这次写入视为已读
+    func skipOwnWrite() {
+        lastChangeCount = NSPasteboard.general.changeCount
+    }
+
     private func tick() {
         let pb = NSPasteboard.general
         guard pb.changeCount != lastChangeCount else { return }
         lastChangeCount = pb.changeCount
 
-        if ignoreNextChange {
-            ignoreNextChange = false
-            return
-        }
         if PrivacyFilter.shouldIgnore(pb, excludedBundleIDs: Settings.shared.excludedBundleIDs) {
             return
         }
-        guard let (item, imageData) = Self.parse(pb) else { return }
-        onNewItem?(item, imageData)
+        guard let (item, image) = Self.parse(pb) else { return }
+        onNewItem?(item, image)
     }
 
     /// 类型判定顺序（决策见 02 第 3 节）：文件 → 图片 → 字符串（颜色 → 链接 → 文本）
-    static func parse(_ pb: NSPasteboard) -> (ClipItem, Data?)? {
+    static func parse(_ pb: NSPasteboard) -> (ClipItem, ClipImage?)? {
         let front = NSWorkspace.shared.frontmostApplication
 
         func makeItem(_ type: ClipItemType, text: String?) -> ClipItem {
@@ -61,14 +65,12 @@ final class ClipboardMonitor {
             return (makeItem(.file, text: first.path), nil)
         }
 
-        // 2) 图片：优先 PNG，其次 TIFF 转 PNG
+        // 2) 图片：优先 PNG，其次 TIFF，保留原始数据
         if let png = pb.data(forType: .png) {
-            return (makeItem(.image, text: nil), png)
+            return (makeItem(.image, text: nil), .png(png))
         }
-        if let tiff = pb.data(forType: .tiff),
-           let rep = NSBitmapImageRep(data: tiff),
-           let png = rep.representation(using: .png, properties: [:]) {
-            return (makeItem(.image, text: nil), png)
+        if let tiff = pb.data(forType: .tiff) {
+            return (makeItem(.image, text: nil), .tiff(tiff))
         }
 
         // 3) 字符串

@@ -10,6 +10,7 @@ struct ClipItem: Identifiable, Codable, Equatable {
     let type: ClipItemType
     var text: String?           // text/link/color 存内容；file 存完整路径
     var imageFilename: String?  // image 类型：images/ 目录下的文件名（M2 写入）
+    var imageHash: String?      // image 类型：PNG 数据的 SHA-256
     var sourceAppBundleID: String?
     var sourceAppName: String?
     var createdAt: Date         // var：去重上移时会刷新

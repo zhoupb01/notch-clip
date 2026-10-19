@@ -13,7 +13,18 @@ final class NotchWindowController {
     private let monitor: ClipboardMonitor
 
     /// 悬停唤醒开关。由 AppDelegate 按唤醒方式设置；关闭时刘海悬停不再展开面板
-    var hoverWakeEnabled = true
+    var hoverWakeEnabled = true {
+        didSet {
+            if hoverWakeEnabled {
+                startHoverTimer()
+            } else {
+                hoverTimer?.invalidate()
+                hoverTimer = nil
+                hoverStart = nil
+                outsideStart = nil
+            }
+        }
+    }
 
     private(set) var geometry = NotchGeometry.detect()
     private var panel: NotchPanel?
@@ -38,11 +49,10 @@ final class NotchWindowController {
             forName: NSApplication.didChangeScreenParametersNotification,
             object: nil, queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in self?.rebuild() }
+            Task { @MainActor in self?.rebuildIfNeeded() }
         }
-        // 进入/退出全屏走 Space 切换（不触发 screenParameters）。若不重检测，刘海几何
-        // 会相对当前模式变陈旧 → 面板位置/尺寸偏移、顶部与刘海衔接错位。切换时重建，
-        // 让窗口位置、顶部安全区高按当前模式的刘海重新对齐
+        // 进入/退出全屏走 Space 切换（不触发 screenParameters）。刘海几何可能随模式变化，
+        // 不重检测会让面板位置/顶部安全区与刘海错位；切 Space 很频繁，所以只在刘海位置变了时重建
         NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.activeSpaceDidChangeNotification,
             object: nil, queue: .main
@@ -50,7 +60,7 @@ final class NotchWindowController {
             Task { @MainActor in
                 guard let self else { return }
                 if self.viewModel.state != .idle { self.closePanel(restoreFocus: false) }
-                self.rebuild()
+                self.rebuildIfNeeded()
             }
         }
     }
@@ -100,10 +110,12 @@ final class NotchWindowController {
         panel = p
     }
 
-    private func rebuild() {
+    private func rebuildIfNeeded() {
+        let detected = NotchGeometry.detect()
+        guard detected.notchRect != geometry.notchRect else { return }
+        geometry = detected
         panel?.orderOut(nil)
         panel = nil
-        geometry = NotchGeometry.detect()
         buildWindow()
     }
 
@@ -119,9 +131,11 @@ final class NotchWindowController {
     // MARK: 悬停检测（决策 D3：0.1s 轮询鼠标位置，不依赖窗口事件、无需权限）
 
     private func startHoverTimer() {
+        guard hoverTimer == nil else { return }
         let t = Timer(timeInterval: 0.1, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.hoverTick() }
+            MainActor.assumeIsolated { self?.hoverTick() }
         }
+        t.tolerance = 0.02
         RunLoop.main.add(t, forMode: .common)
         hoverTimer = t
     }
@@ -130,7 +144,6 @@ final class NotchWindowController {
         let loc = NSEvent.mouseLocation
         switch viewModel.state {
         case .idle, .hud:   // HUD 显示期间也接受悬停，直接升级为面板，消除复制后的失灵窗口
-            guard hoverWakeEnabled else { hoverStart = nil; break }
             if notchHoverRect().contains(loc) {
                 if hoverStart == nil { hoverStart = Date() }
                 if Date().timeIntervalSince(hoverStart!) >= 0.15 {   // 悬停 0.15s 触发

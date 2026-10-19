@@ -66,17 +66,3 @@ struct NotchRootView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 }
-
-struct IdleNotchView: View {
-    let notchSize: CGSize
-
-    var body: some View {
-        VStack(spacing: 0) {
-            UnevenRoundedRectangle(cornerRadii: .init(bottomLeading: 10, bottomTrailing: 10))
-                .fill(Color.black)
-                .frame(width: notchSize.width, height: notchSize.height)
-            Spacer(minLength: 0)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-    }
-}
